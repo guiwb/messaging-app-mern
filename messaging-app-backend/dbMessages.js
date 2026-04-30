@@ -4,7 +4,8 @@ const messagingSchema = mongoose.Schema({
   message: String,
   name: String,
   timestamp: String,
-  received: Boolean
+  received: Boolean,
+  imageId: String
 })
 
 export default mongoose.model('messagingmessages', messagingSchema)
