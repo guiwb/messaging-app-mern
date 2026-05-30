@@ -151,7 +151,7 @@ app.put("/messages/edit/:id", async (req, res) => {
         const { message, name } = req.body;
 
         if (!id || id === "null") return res.status(404).send({ message: "ID da mensagem inválido" });
-        
+
         const msg = await Messages.findById(id);
         if (!msg) return res.status(404).send({ message: "Mensagem não encontrada" });  //msg existe
         if (msg.name !== name) return res.status(404).send({ message: "Não pode editar mensagem de outro usuario" }); //mesmo usuario
