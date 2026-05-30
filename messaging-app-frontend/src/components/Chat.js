@@ -149,7 +149,7 @@ const Chat = ({ messages }) => {
                 {messages.map((message, index) => (
                     <div key={index} className={`chat__messageContainer ${message.name === user && "chat__receiver"}`}>
                         <p className={`chat__message ${message.name === user && "chat__receiver"}`}>
-                            <span className="chat__name">{message.name}</span>
+                            <span className="chat__name">{message.name}</span> <br />
                             {message.imageId ? (
                                 <img src={`http://127.0.0.1:9000/messages/image/${message.imageId}`} alt="Imagem enviada" className="chat__image" />
                             ) : (
