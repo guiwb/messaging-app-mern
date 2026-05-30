@@ -69,9 +69,6 @@ const Chat = ({ messages }) => {
         setTextoEdicao(message);
         setFormEdicaoAberto(true);
         setMensagemSelecionadaId(messageId);
-        setTimeout(() => {
-            fecharMenu()
-        }, 3000);
     };
 
     const salvarEdicao = async () => {
@@ -104,6 +101,14 @@ const Chat = ({ messages }) => {
     useEffect(() => {
         setSeed(Math.floor(Math.random() * 5000));
     }, []);
+
+    useEffect(() => {
+        if (formEdicaoAberto) return;
+        const timer = setTimeout(() => {
+            fecharMenu();
+        }, 3000);
+        return () => clearTimeout(timer);
+    }, [formEdicaoAberto]);
 
     return (
         <div className="chat">
@@ -155,7 +160,7 @@ const Chat = ({ messages }) => {
                             ) : (
                                 message.message
                             )}
-                            <span className="chat__timestamp">{message.timestamp}</span>
+                            <span className="chat__timestamp">{new Date(message.timestamp).toLocaleString('pt-BR')}</span>
                         </p>
                         {message.name === user && (
                             <IconButton size="small" onClick={(e) => abrirMenu(e, message._id)}>
