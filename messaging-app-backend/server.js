@@ -18,6 +18,7 @@ const connection_url = "mongodb://localhost:27017/chat";
 //Middleware
 app.use(express.json());
 app.use(Cors());
+app.use("/uploads", express.static("uploads"));
 
 //DB Config
 mongoose.connect(connection_url);
@@ -88,6 +89,7 @@ app.post("/messages/image", upload.single("image"), async (req, res) => {
           name: req.body.name,
           timestamp: new Date().toUTCString(),
           received: true,
+          type: "image",
           imageId: uploadStream.id.toString(),
         };
         await Messages.create(dbMessage);

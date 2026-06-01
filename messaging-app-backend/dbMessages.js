@@ -1,11 +1,13 @@
-import mongoose from 'mongoose'
+import mongoose from "mongoose";
 
 const messagingSchema = mongoose.Schema({
   message: String,
   name: String,
   timestamp: String,
   received: Boolean,
-  imageId: String
-})
+  type: { type: String, default: "text" },
+  fileUrl: String,
+  imageId: String,
+});
 
-export default mongoose.model('messagingmessages', messagingSchema)
+export default mongoose.model("messagingmessages", messagingSchema);
