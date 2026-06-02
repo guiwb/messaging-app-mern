@@ -17,6 +17,8 @@ const Chat = ({ messages }) => {
   const mediaRecorderRef = useRef(null);
   const audioChunksRef = useRef([]);
   const [{ user }] = useStateValue();
+  const inputRef = useRef(null);
+  const [loadingFile, setLoadingFile] = useState(false);
 
   const openFileSelector = () => {
     fileInputRef.current.click();
@@ -80,17 +82,48 @@ const Chat = ({ messages }) => {
   const sendMessage = async (e) => {
     e.preventDefault();
     await axios.post("/messages/new", {
-      message: input,
+      message: `:\n${input}`,
       name: user,
       timestamp: new Date().toUTCString(),
       received: true,
     });
     setInput("");
   };
-
   useEffect(() => {
     setSeed(Math.floor(Math.random() * 5000));
   }, []);
+
+  const convertFile = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    setLoadingFile(true);
+
+    const formData = new FormData();
+    formData.append("file", file);
+    try {
+      const response = await axios.post(
+        "http://localhost:9000/convert",
+        formData,
+        {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        },
+      );
+      await axios.post("/messages/new", {
+        message: "",
+        name: user,
+        timestamp: new Date().toUTCString(),
+        type: "pdf",
+        fileUrl: response.data.fileUrl,
+      });
+    } catch (error) {
+      console.error("Erro na conversão:", error);
+    } finally {
+      setLoadingFile(false);
+    }
+  };
 
   return (
     <div className="chat">
@@ -106,17 +139,26 @@ const Chat = ({ messages }) => {
           <IconButton>
             <SearchIcon />
           </IconButton>
-          <IconButton onClick={() => console.log("Converter")}>
-            <img
-              src="/converter.svg"
-              alt="converter"
-              style={{
-                width: 30,
-                height: 30,
-                objectFit: "contain",
-              }}
+          <>
+            <IconButton onClick={() => inputRef.current.click()}>
+              <img
+                src="/converter.svg"
+                alt="converter"
+                style={{
+                  width: 30,
+                  height: 30,
+                  objectFit: "contain",
+                }}
+              />
+            </IconButton>
+            <input
+              ref={inputRef}
+              type="file"
+              hidden
+              accept=".doc,.docx"
+              onChange={convertFile}
             />
-          </IconButton>
+          </>
           <input
             ref={fileInputRef}
             type="file"
@@ -139,7 +181,16 @@ const Chat = ({ messages }) => {
             className={`chat__message ${message.name === user && "chat__receiver"}`}
           >
             <span className="chat__name">{message.name}</span>
-            {message.imageId ? (
+            {message.type === "pdf" ? (
+              <a
+                href={message.fileUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="chat__file"
+              >
+                📄 Abrir PDF
+              </a>
+            ) : message.type === "image" ? (
               <img
                 src={`http://127.0.0.1:9000/messages/image/${message.imageId}`}
                 alt="Imagem enviada"
@@ -156,15 +207,18 @@ const Chat = ({ messages }) => {
       </div>
       <div className="chat__footer">
         <InsertEmoticonIcon />
-        <form>
+        <form onSubmit={sendMessage}>
           <input
-            placeholder="Digite sua mensagem"
+            placeholder={
+              loadingFile ? "Convertendo arquivo..." : "Digite sua mensagem"
+            }
             type="text"
             value={input}
             onChange={(e) => setInput(e.target.value)}
+            disabled={loadingFile}
           />
-          <button type="submit" onClick={sendMessage}>
-            Enviar
+          <button type="submit" disabled={loadingFile}>
+            {loadingFile ? "..." : "Enviar"}
           </button>
         </form>
         <MicIcon onClick={startAudio} className={recording ? "chat__micRecording" : ""} />

@@ -8,7 +8,8 @@ import multer from "multer";
 import { Readable } from "stream";
 import uploadArquivos from "./middlewares/upload.js";
 import { convert } from "./services/conversor.js";
-
+import fs from "fs";
+import path from "path";
 //App Config
 const app = express();
 const port = process.env.PORT || 9000;
@@ -17,6 +18,7 @@ const connection_url = "mongodb://localhost:27017/chat";
 //Middleware
 app.use(express.json());
 app.use(Cors());
+app.use("/uploads", express.static("uploads"));
 
 //DB Config
 mongoose.connect(connection_url);
@@ -101,6 +103,7 @@ app.post("/messages/image", upload.single("image"), async (req, res) => {
           name: req.body.name,
           timestamp: new Date().toUTCString(),
           received: true,
+          type: "image",
           imageId: uploadStream.id.toString(),
         };
         await Messages.create(dbMessage);
@@ -163,8 +166,13 @@ app.post("/convert", uploadArquivos.single("file"), async (req, res) => {
     return res.status(400).send("Nenhum arquivo enviado");
   }
   try {
-    const resultado = await convert(req.file.path);
-    res.json({ message: "Convertido com sucesso", resultado });
+    const data = await convert(req.file.path);
+    const fileName = `converted-${Date.now()}.pdf`;
+    const filePath = path.join("uploads", fileName);
+    fs.writeFileSync(filePath, data);
+    return res.json({
+      fileUrl: `http://localhost:9000/uploads/${fileName}`,
+    });
   } catch (error) {
     console.log(error);
     res.status(500).send("Erro na conversão");
