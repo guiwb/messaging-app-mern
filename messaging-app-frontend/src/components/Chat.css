@@ -89,3 +89,18 @@
   padding: 10px;
   color: gray;
 }
+
+.chat__micRecording {
+  color: red !important;
+  animation: pulse 1s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+.chat__image {
+  max-width: 300px;
+  display: block;
+}

@@ -5,7 +5,8 @@ const messagingSchema = mongoose.Schema({
   name: String,
   timestamp: String,
   received: Boolean,
-  imageId: String
+  imageId: String,
+  audioId: String
 })
 
 export default mongoose.model('messagingmessages', messagingSchema)
