@@ -12,13 +12,50 @@ import { useStateValue } from "./StateProvider";
 const Chat = ({ messages }) => {
   const [seed, setSeed] = useState("");
   const [input, setInput] = useState("");
+  const [recording, setRecording] = useState(false);
   const fileInputRef = useRef(null);
+  const mediaRecorderRef = useRef(null);
+  const audioChunksRef = useRef([]);
   const [{ user }] = useStateValue();
   const inputRef = useRef(null);
   const [loadingFile, setLoadingFile] = useState(false);
 
   const openFileSelector = () => {
     fileInputRef.current.click();
+  };
+
+  const startAudio = async () => {
+    if (recording) {
+      mediaRecorderRef.current?.stop();
+      return;
+    }
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mediaRecorder = new MediaRecorder(stream);
+      mediaRecorderRef.current = mediaRecorder;
+      audioChunksRef.current = [];
+
+      mediaRecorder.ondataavailable = (e) => {
+        if (e.data.size > 0) audioChunksRef.current.push(e.data);
+      };
+
+      mediaRecorder.onstop = async () => {
+        stream.getTracks().forEach((t) => t.stop());
+        const blob = new Blob(audioChunksRef.current, { type: mediaRecorder.mimeType });
+        const formData = new FormData();
+        formData.append("audio", blob, "audio");
+        formData.append("name", user);
+        await axios.post("/messages/audio", formData, {
+          headers: { "Content-Type": "multipart/form-data" },
+        });
+        setRecording(false);
+      };
+
+      mediaRecorder.start();
+      setRecording(true);
+    } catch (err) {
+      alert("Permissão de microfone negada.");
+    }
   };
 
   const sendImage = async (e) => {
@@ -159,6 +196,8 @@ const Chat = ({ messages }) => {
                 alt="Imagem enviada"
                 className="chat__image"
               />
+            ) : message.audioId ? (
+              <audio controls src={`http://127.0.0.1:9000/messages/audio/${message.audioId}`} />
             ) : (
               message.message
             )}
@@ -182,7 +221,7 @@ const Chat = ({ messages }) => {
             {loadingFile ? "..." : "Enviar"}
           </button>
         </form>
-        <MicIcon />
+        <MicIcon onClick={startAudio} className={recording ? "chat__micRecording" : ""} />
       </div>
     </div>
   );

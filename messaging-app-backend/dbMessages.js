@@ -8,6 +8,7 @@ const messagingSchema = mongoose.Schema({
   type: { type: String, default: "text" },
   fileUrl: String,
   imageId: String,
+  audioId: String
 });
 
 export default mongoose.model("messagingmessages", messagingSchema);
