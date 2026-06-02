@@ -98,3 +98,30 @@
   padding: 10px;
   color: gray;
 }
+
+.chat__highlight {
+  animation: piscarDestaque 3s ease-in-out;
+  position: relative;
+  z-index: 10;
+}
+
+@keyframes piscarDestaque {
+  0% {
+    background-color: #ffda66 !important; 
+    transform: scale(1.03); 
+    border-color: #ffda66;
+    border-width: 5;              
+    box-shadow: 0 0 12px rgba(255, 218, 102, 0.6);
+  }
+  30% {
+    background-color: #ffda66 !important;
+    border-color: #ffda66;
+    border-width: 5;
+    transform: scale(1.03);
+    box-shadow: 0 0 12px rgba(255, 218, 102, 0.6);
+  }
+  100% {
+    transform: scale(1);
+    box-shadow: none;
+  }
+}
