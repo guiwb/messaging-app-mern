@@ -14,6 +14,8 @@ const Chat = ({ messages }) => {
   const [input, setInput] = useState("");
   const fileInputRef = useRef(null);
   const [{ user }] = useStateValue();
+  const [showSearch, setShowSearch] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
 
   const openFileSelector = () => {
     fileInputRef.current.click();
@@ -51,9 +53,29 @@ const Chat = ({ messages }) => {
     setInput("");
   };
 
+  const searchMessage = async () => {
+    if (!searchQuery.trim()) return;
+
+    try {
+      const response = await axios.get(`/messages/search?text=${searchQuery}`);
+      const mensagemElement = document.getElementById(response.data[0]._id);
+
+      if(mensagemElement) {
+        mensagemElement.scrollIntoView({ behavior: "smooth", block: "center" });
+      }
+      
+    } catch (error) {
+      console.error("Erro ao buscar mensagens:", error);
+    }
+  };
+
   useEffect(() => {
     setSeed(Math.floor(Math.random() * 5000));
   }, []);
+
+  useEffect(() => {
+    searchMessage()
+  }, [searchQuery]);
 
   return (
     <div className="chat">
@@ -66,6 +88,13 @@ const Chat = ({ messages }) => {
           <p>Visto em: {messages[messages.length - 1]?.timestamp}</p>
         </div>
         <div className="chat__headerRight">
+          <input 
+            type="text" 
+            className="search_input" 
+            placeholder="Pesquise..." 
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
           <IconButton>
             <SearchIcon />
           </IconButton>
@@ -98,6 +127,7 @@ const Chat = ({ messages }) => {
       <div className="chat__body">
         {messages.map((message, index) => (
           <p
+            id={message._id}
             key={index}
             className={`chat__message ${message.name === user && "chat__receiver"}`}
           >

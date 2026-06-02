@@ -50,6 +50,20 @@ app.post("/messages/new", async (req, res) => {
   }
 });
 
+app.get("/messages/search", async (req, res) => {
+  const text = req.query.text;
+
+  try {
+    const dbMessages = await Messages.find({ 
+      message: { $regex: text, $options: "i" } 
+    }).sort({timestamp: -1});
+    res.status(200).send(dbMessages);
+    // res.status(200).json({msg:"ok"});
+  } catch (error) {
+    res.status(500).send(error);
+  }
+});
+
 app.get("/messages/sync", async (req, res) => {
   try {
     const dbMessages = await Messages.find();
