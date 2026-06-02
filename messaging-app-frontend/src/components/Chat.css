@@ -67,6 +67,21 @@
   border: 1px solid gray;     
   outline: none;
   padding-left: 10px;
+  padding-right: 28px;
+}
+
+.search_clear {
+  position: absolute;
+  right: 8px;
+  cursor: pointer;
+  color: gray;
+  font-size: 14px;
+  line-height: 1;
+  user-select: none;
+}
+
+.search_clear:hover {
+  color: #333;
 }
 
 .chat__footer {

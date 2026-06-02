@@ -14,9 +14,9 @@ const Chat = ({ messages }) => {
   const [input, setInput] = useState("");
   const fileInputRef = useRef(null);
   const [{ user }] = useStateValue();
-  // const [showSearch, setShowSearch] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [highlightedId, setHighlightedId] = useState(null);
+  const [searchVisible, setSearchVisible] = useState(false);
 
   const openFileSelector = () => {
     fileInputRef.current.click();
@@ -95,16 +95,31 @@ const Chat = ({ messages }) => {
           <p>Visto em: {messages[messages.length - 1]?.timestamp}</p>
         </div>
         <div className="chat__headerRight">
-          <input 
-            type="text" 
-            className="search_input" 
-            placeholder="Pesquise..." 
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
-          <IconButton>
-            <SearchIcon />
-          </IconButton>
+          {!searchVisible &&
+            <IconButton>
+              <SearchIcon onClick={() => {setSearchVisible(true)}}/>
+            </IconButton>
+          }
+          {searchVisible && 
+            <div style={{ position: "relative", display: "inline-flex", alignItems: "center" }}>
+              <input 
+                type="text" 
+                className="search_input" 
+                placeholder="Pesquise..." 
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+              <span
+                onClick={() => {
+                  setSearchVisible(false);
+                  setSearchQuery("");
+                }}
+                className="search_clear"
+              >
+                ✕
+              </span>
+            </div>
+          }
           <IconButton onClick={() => console.log("Converter")}>
             <img
               src="/converter.svg"
