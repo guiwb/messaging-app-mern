@@ -8,7 +8,8 @@ import multer from "multer";
 import { Readable } from "stream";
 import uploadArquivos from "./middlewares/upload.js";
 import { convert } from "./services/conversor.js";
-
+import fs from "fs";
+import path from "path";
 //App Config
 const app = express();
 const port = process.env.PORT || 9000;
@@ -17,13 +18,18 @@ const connection_url = "mongodb://localhost:27017/chat";
 //Middleware
 app.use(express.json());
 app.use(Cors());
+app.use("/uploads", express.static("uploads"));
 
 //DB Config
 mongoose.connect(connection_url);
 let gridFSBucket;
+let gridFSAudioBucket;
 mongoose.connection.once("open", () => {
     gridFSBucket = new mongoose.mongo.GridFSBucket(mongoose.connection.db, {
         bucketName: "images",
+    });
+    gridFSAudioBucket = new mongoose.mongo.GridFSBucket(mongoose.connection.db, {
+        bucketName: "audios",
     });
 });
 
@@ -32,6 +38,16 @@ const upload = multer({
     fileFilter: (req, file, cb) => {
         if (file.mimetype !== "image/png") {
             return cb(new Error("Apenas imagens PNG são permitidas"));
+        }
+        cb(null, true);
+    },
+});
+
+const uploadAudio = multer({
+    storage: multer.memoryStorage(),
+    fileFilter: (req, file, cb) => {
+        if (!file.mimetype.startsWith("audio/")) {
+            return cb(new Error("Apenas arquivos de áudio são permitidos"));
         }
         cb(null, true);
     },
@@ -87,6 +103,7 @@ app.post("/messages/image", upload.single("image"), async (req, res) => {
                     name: req.body.name,
                     timestamp: new Date().toUTCString(),
                     received: true,
+                    type: "image",
                     imageId: uploadStream.id.toString(),
                 };
                 await Messages.create(dbMessage);
@@ -98,13 +115,64 @@ app.post("/messages/image", upload.single("image"), async (req, res) => {
     }
 });
 
+app.post("/messages/audio", uploadAudio.single("audio"), async (req, res) => {
+    try {
+        if (!gridFSAudioBucket)
+            return res.status(503).send({ message: "GridFS ainda não está pronto" });
+        if (!req.file)
+            return res.status(400).send({ message: "Nenhum arquivo de áudio enviado" });
+
+        const uploadStream = gridFSAudioBucket.openUploadStream(
+            req.file.originalname || "audio",
+            { contentType: req.file.mimetype }
+        );
+
+        Readable.from(req.file.buffer)
+            .pipe(uploadStream)
+            .on("error", (error) => res.status(500).send(error))
+            .on("finish", async () => {
+                const dbMessage = {
+                    message: "",
+                    name: req.body.name,
+                    timestamp: new Date().toUTCString(),
+                    received: true,
+                    audioId: uploadStream.id.toString(),
+                };
+                await Messages.create(dbMessage);
+                res.status(201).send(dbMessage);
+            });
+    } catch (error) {
+        console.log(error);
+        res.status(500).send(error.message);
+    }
+});
+
+app.get("/messages/audio/:id", async (req, res) => {
+    try {
+        if (!gridFSAudioBucket)
+            return res.status(503).send({ message: "GridFS ainda não está pronto" });
+        const fileId = new mongoose.Types.ObjectId(req.params.id);
+        gridFSAudioBucket
+            .openDownloadStream(fileId)
+            .on("error", (error) => res.status(404).send(error))
+            .pipe(res);
+    } catch (error) {
+        res.status(500).send(error);
+    }
+});
+
 app.post("/convert", uploadArquivos.single("file"), async (req, res) => {
     if (!req.file) {
         return res.status(400).send("Nenhum arquivo enviado");
     }
     try {
-        const resultado = await convert(req.file.path);
-        res.json({ message: "Convertido com sucesso", resultado });
+        const data = await convert(req.file.path);
+        const fileName = `converted-${Date.now()}.pdf`;
+        const filePath = path.join("uploads", fileName);
+        fs.writeFileSync(filePath, data);
+        return res.json({
+            fileUrl: `http://localhost:9000/uploads/${fileName}`,
+        });
     } catch (error) {
         console.log(error);
         res.status(500).send("Erro na conversão");
