@@ -12,7 +12,7 @@ const SidebarChat = ({ person, lastTimestamp }) => {
       <Avatar src={`https://api.dicebear.com/9.x/toon-head/svg?flip=true&seed=${seed}`} />
       <div className="sidebarChat__info">
         <h2>{person}</h2>
-        <p>{lastTimestamp}</p>
+        <p>{new Date(lastTimestamp).toLocaleString('pt-BR')}</p>
       </div>
     </div>
   )
