@@ -17,6 +17,9 @@ const Chat = ({ messages }) => {
   const mediaRecorderRef = useRef(null);
   const audioChunksRef = useRef([]);
   const [{ user }] = useStateValue();
+  const [searchQuery, setSearchQuery] = useState("");
+  const [highlightedId, setHighlightedId] = useState(null);
+  const [searchVisible, setSearchVisible] = useState(false);
   const inputRef = useRef(null);
   const [loadingFile, setLoadingFile] = useState(false);
   const [anchorEl, setAnchorEl] = useState(null);
@@ -93,6 +96,30 @@ const Chat = ({ messages }) => {
     });
     setInput("");
   };
+
+  const searchMessage = async () => {
+    if (!searchQuery.trim()) return;
+
+    try {
+      const response = await axios.get(`/messages/search?text=${searchQuery}`);
+      const mensagemElement = document.getElementById(response.data[0]._id);
+      console.log("Buscando por:", response);
+      console.log("Buscando por:", mensagemElement);
+
+      if (mensagemElement) {
+        mensagemElement.scrollIntoView({ behavior: "smooth", block: "center" });
+
+        setHighlightedId(response.data[0]._id);
+
+        setTimeout(() => {
+          setHighlightedId(null);
+        }, 3000);
+      }
+
+    } catch (error) {
+      console.error("Erro ao buscar mensagens:", error);
+    }
+  }
 
   const convertFile = async (e) => {
     const file = e.target.files[0];
@@ -175,6 +202,10 @@ const Chat = ({ messages }) => {
   }, []);
 
   useEffect(() => {
+    searchMessage()
+  }, [searchQuery]);
+
+  useEffect(() => {
     if (formEdicaoAberto) return;
     const timer = setTimeout(() => {
       fecharMenu();
@@ -193,9 +224,31 @@ const Chat = ({ messages }) => {
           <p>Visto em: {messages[messages.length - 1]?.timestamp}</p>
         </div>
         <div className="chat__headerRight">
-          <IconButton>
-            <SearchIcon />
-          </IconButton>
+          {!searchVisible &&
+            <IconButton>
+              <SearchIcon onClick={() => { setSearchVisible(true) }} />
+            </IconButton>
+          }
+          {searchVisible &&
+            <div style={{ position: "relative", display: "inline-flex", alignItems: "center" }}>
+              <input
+                type="text"
+                className="search_input"
+                placeholder="Pesquise..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+              <span
+                onClick={() => {
+                  setSearchVisible(false);
+                  setSearchQuery("");
+                }}
+                className="search_clear"
+              >
+                ✕
+              </span>
+            </div>
+          }
           <>
             <IconButton onClick={() => inputRef.current.click()}>
               <img
@@ -229,11 +282,11 @@ const Chat = ({ messages }) => {
           <IconButton>
             <MoreVertIcon />
           </IconButton>
-        </div>
-      </div>
+        </div >
+      </div >
       <div className="chat__body">
         {messages.map((message, index) => (
-          <div key={index} className={`chat__messageContainer ${message.name === user && "chat__receiver"}`}>
+          <div key={index} id={message._id} className={`chat__messageContainer ${message.name === user && "chat__receiver"} ${highlightedId === message._id ? "chat__highlight" : ""}`}>
             <p className={`chat__message ${message.name === user && "chat__receiver"}`}>
               <span className="chat__name">{message.name}</span> <br />
               {message.type === "pdf" ? (
@@ -319,7 +372,7 @@ const Chat = ({ messages }) => {
         </form>
         <MicIcon onClick={startAudio} className={recording ? "chat__micRecording" : ""} />
       </div>
-    </div>
+    </div >
   );
 };
 export default Chat;
